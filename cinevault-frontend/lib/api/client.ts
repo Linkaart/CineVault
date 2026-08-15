@@ -53,13 +53,13 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     if (token) finalHeaders.set("Authorization", `Bearer ${token}`);
   }
 
-  let res = await fetch(`${API_URL}${path}`, { ...rest, headers: finalHeaders });
+  let res = await fetch(`${API_URL}${path}`, { cache: "no-store", ...rest, headers: finalHeaders });
 
   if (res.status === 401 && auth) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       finalHeaders.set("Authorization", `Bearer ${newToken}`);
-      res = await fetch(`${API_URL}${path}`, { ...rest, headers: finalHeaders });
+      res = await fetch(`${API_URL}${path}`, { cache: "no-store", ...rest, headers: finalHeaders });
     }
   }
 
