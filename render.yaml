@@ -1,0 +1,90 @@
+databases:
+  - name: cinevault-db
+    databaseName: cinevault
+    user: cinevault
+    plan: free
+
+services:
+  # API Django/DRF
+  - type: web
+    name: cinevault-backend
+    runtime: docker
+    dockerfilePath: ./cinevault-backend/docker/Dockerfile
+    dockerContext: ./cinevault-backend
+    dockerCommand: /entrypoint.sh gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3
+    healthCheckPath: /api/health/
+    plan: free
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.prod
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cinevault-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: cinevault-redis
+          property: connectionString
+      - key: TMDB_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+
+  # Worker Celery (synchro TMDB + calcul des recommandations)
+  - type: worker
+    name: cinevault-celery-worker
+    runtime: docker
+    dockerfilePath: ./cinevault-backend/docker/Dockerfile
+    dockerContext: ./cinevault-backend
+    dockerCommand: celery -A config worker -l info
+    plan: free
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.prod
+      - key: SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cinevault-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: cinevault-redis
+          property: connectionString
+      - key: TMDB_API_KEY
+        sync: false
+
+  # Scheduler Celery Beat (synchro nocturne du catalogue)
+  - type: worker
+    name: cinevault-celery-beat
+    runtime: docker
+    dockerfilePath: ./cinevault-backend/docker/Dockerfile
+    dockerContext: ./cinevault-backend
+    dockerCommand: celery -A config beat -l info
+    plan: free
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.prod
+      - key: SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cinevault-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: cinevault-redis
+          property: connectionString
+
+  # Redis (broker Celery)
+  - type: redis
+    name: cinevault-redis
+    plan: free
+    ipAllowList: []

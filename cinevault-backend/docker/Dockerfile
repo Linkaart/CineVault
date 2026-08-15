@@ -1,0 +1,25 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq-dev gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements/ ./requirements/
+RUN pip install --no-cache-dir -r requirements/dev.txt
+
+COPY . .
+
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Commande par défaut pour un déploiement (Railway/Render) : gunicorn sur le
+# port fourni par la plateforme. En local, docker-compose.yml écrase cette
+# commande par `runserver` pour le rechargement à chaud.
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3"]

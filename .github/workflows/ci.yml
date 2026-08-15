@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend — lint & tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cinevault-backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cinevault_test
+          POSTGRES_USER: cinevault
+          POSTGRES_PASSWORD: cinevault
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cinevault"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      SECRET_KEY: ci-test-secret-key
+      DEBUG: "True"
+      POSTGRES_DB: cinevault_test
+      POSTGRES_USER: cinevault
+      POSTGRES_PASSWORD: cinevault
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://localhost:6379/0
+      TMDB_API_KEY: dummy-key-for-ci
+      CORS_ORIGINS: http://localhost:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: cinevault-backend/requirements/dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements/dev.txt
+
+      - name: Check for missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run Django system checks
+        run: python manage.py check
+
+      - name: Run migrations
+        run: python manage.py migrate --noinput
+
+      - name: Run tests with coverage
+        run: pytest --cov=apps --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: cinevault-backend/coverage.xml
+          retention-days: 14
+
+  frontend:
+    name: Frontend — typecheck & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cinevault-frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: cinevault-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: cinevault-frontend/coverage
+          retention-days: 14
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api
+
+  docker-build:
+    name: Docker — validation des images
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: cinevault-backend
+          file: cinevault-backend/docker/Dockerfile
+          push: false
+          tags: cinevault-backend:ci
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: cinevault-frontend
+          file: cinevault-frontend/Dockerfile
+          push: false
+          tags: cinevault-frontend:ci

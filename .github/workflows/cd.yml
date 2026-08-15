@@ -1,0 +1,40 @@
+name: CD
+
+# Ce workflow est OPTIONNEL. Railway, Render et Vercel proposent tous un
+# auto-déploiement natif dès que le repo GitHub est connecté depuis leur
+# tableau de bord — dans ce cas, ce fichier n'est pas nécessaire.
+#
+# Il n'est utile que si tu préfères déclencher le déploiement explicitement
+# depuis GitHub Actions (ex: pour l'enchaîner après la CI, ou déployer via
+# un "deploy hook" plutôt que l'intégration GitHub automatique).
+#
+# Pour l'activer : renseigner les secrets correspondants dans
+# Settings > Secrets and variables > Actions du repo, puis décommenter
+# les steps voulues ci-dessous.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy:
+    name: Déploiement
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Deploy hook — Render (backend)
+        if: ${{ vars.RENDER_DEPLOY_HOOK_ENABLED == 'true' }}
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      - name: Deploy hook — Railway (backend)
+        if: ${{ vars.RAILWAY_DEPLOY_HOOK_ENABLED == 'true' }}
+        run: curl -fsS -X POST "${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}"
+
+      # Vercel déploie automatiquement à chaque push une fois le repo importé
+      # depuis le tableau de bord Vercel : aucune étape nécessaire ici.
+      - name: Info
+        run: |
+          echo "Si aucun secret n'est configuré ci-dessus, ce job ne fait rien d'autre que ce log."
+          echo "Voir le README, section Déploiement, pour la marche à suivre complète."
