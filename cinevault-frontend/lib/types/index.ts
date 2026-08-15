@@ -23,10 +23,26 @@ export interface User {
   bio: string;
   avatar: string | null;
   favorite_genres: number[];
+  favorite_genres_detail: Genre[];
+  top_genres: Genre[];
   followers_count: number;
   following_count: number;
   reviews_count: number;
   date_joined: string;
+}
+
+export interface CompatibilityMovie {
+  movie: Movie;
+  your_rating: number | null;
+  their_rating: number | null;
+}
+
+export interface Compatibility {
+  user: User;
+  score: number;
+  basis: "reviews" | "genres";
+  common_movies_count: number;
+  common_movies: CompatibilityMovie[];
 }
 
 export interface Review {

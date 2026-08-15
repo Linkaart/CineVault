@@ -1,6 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.db.models import Count
 from rest_framework import serializers
+
+from apps.movies.models import Genre
+from apps.movies.serializers import GenreSerializer
 
 from .models import Follow
 
@@ -11,6 +15,8 @@ class UserSerializer(serializers.ModelSerializer):
     followers_count = serializers.IntegerField(source="followers.count", read_only=True)
     following_count = serializers.IntegerField(source="following.count", read_only=True)
     reviews_count = serializers.IntegerField(source="reviews.count", read_only=True)
+    favorite_genres_detail = GenreSerializer(source="favorite_genres", many=True, read_only=True)
+    top_genres = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -20,11 +26,22 @@ class UserSerializer(serializers.ModelSerializer):
             "bio",
             "avatar",
             "favorite_genres",
+            "favorite_genres_detail",
+            "top_genres",
             "followers_count",
             "following_count",
             "reviews_count",
             "date_joined",
         ]
+
+    def get_top_genres(self, obj):
+        """Genres les plus fréquents parmi les films bien notés (>= 7) par l'utilisateur."""
+        genres = (
+            Genre.objects.filter(movies__reviews__user=obj, movies__reviews__rating__gte=7)
+            .annotate(count=Count("movies__reviews"))
+            .order_by("-count")[:5]
+        )
+        return GenreSerializer(genres, many=True).data
 
 
 class RegisterSerializer(serializers.ModelSerializer):

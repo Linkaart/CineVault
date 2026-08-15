@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { apiFetch } from "@/lib/api/client";
 import { User } from "@/lib/types";
 import ProfileActions from "@/components/users/ProfileActions";
+import CompatibilityCard from "@/components/users/CompatibilityCard";
 
 export default async function UserProfilePage({ params }: { params: { id: string } }) {
   let profile: User;
@@ -39,7 +40,24 @@ export default async function UserProfilePage({ params }: { params: { id: string
         </div>
       </div>
 
+      {profile!.top_genres.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs tracking-[0.2em] text-smoke mb-2">GENRES DE PRÉDILECTION</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {profile!.top_genres.map((genre) => (
+              <span
+                key={genre.id}
+                className="px-3 py-1 rounded-full border border-marquee/30 text-marquee text-xs"
+              >
+                {genre.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <ProfileActions userId={profile!.id} />
+      <CompatibilityCard userId={profile!.id} />
     </div>
   );
 }
