@@ -17,7 +17,11 @@ if not ALLOWED_HOSTS:
 # header transmis par leur proxy pour savoir que la requête est bien en HTTPS.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Le healthcheck de Railway tape le conteneur en HTTP simple, sans passer par
+# le proxy qui pose X-Forwarded-Proto ; sans cette exemption la redirection
+# HTTPS renvoie un 301 et Railway considère le déploiement comme en échec.
 SECURE_SSL_REDIRECT = True
+SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
