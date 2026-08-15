@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import permissions, viewsets
 from rest_framework.exceptions import PermissionDenied
 
@@ -30,10 +31,13 @@ class ListEntryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def _get_watchlist(self):
-        return WatchList.objects.get(pk=self.kwargs["watchlist_pk"])
+        return get_object_or_404(WatchList, pk=self.kwargs["watchlist_pk"])
 
     def get_queryset(self):
-        return ListEntry.objects.filter(watchlist_id=self.kwargs["watchlist_pk"])
+        watchlist = self._get_watchlist()
+        if not watchlist.is_public and watchlist.user != self.request.user:
+            raise PermissionDenied("Cette liste est privée.")
+        return ListEntry.objects.filter(watchlist_id=watchlist.id)
 
     def perform_create(self, serializer):
         watchlist = self._get_watchlist()

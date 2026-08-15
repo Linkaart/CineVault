@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from .models import Follow
 from .serializers import RegisterSerializer, UserSerializer
+from .throttling import AuthRateThrottle
 
 User = get_user_model()
 
@@ -14,6 +15,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AuthRateThrottle]
 
 
 class UserDetailView(generics.RetrieveAPIView):
