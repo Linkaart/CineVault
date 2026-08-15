@@ -13,6 +13,7 @@ export default function RecommendationsPage() {
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [busy, setBusy] = useState(false);
   const [fetched, setFetched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -24,16 +25,20 @@ export default function RecommendationsPage() {
     if (user) {
       fetchRecommendations()
         .then((data) => setRecs(data.results))
+        .catch(() => setError("Impossible de charger tes recommandations."))
         .finally(() => setFetched(true));
     }
   }, [user]);
 
   async function handleRefresh() {
     setBusy(true);
+    setError(null);
     try {
       await refreshRecommendations();
       const data = await fetchRecommendations();
       setRecs(data.results);
+    } catch {
+      setError("Impossible d'actualiser tes recommandations.");
     } finally {
       setBusy(false);
     }
@@ -59,7 +64,9 @@ export default function RecommendationsPage() {
         </button>
       </div>
 
-      {fetched && recs.length === 0 && (
+      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+
+      {!error && fetched && recs.length === 0 && (
         <p className="text-smoke text-sm">
           Note au moins un film pour commencer à recevoir des recommandations.
         </p>
