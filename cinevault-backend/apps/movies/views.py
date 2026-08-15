@@ -23,9 +23,13 @@ class GenreViewSet(viewsets.ReadOnlyModelViewSet):
 class MovieViewSet(viewsets.ReadOnlyModelViewSet):
     """Catalogue de films en lecture seule (alimenté par la synchro TMDB)."""
 
-    queryset = Movie.objects.annotate(
-        avg_rating=Avg("reviews__rating"), review_count=Count("reviews")
-    ).order_by("-created_at")
+    queryset = (
+        Movie.objects.annotate(
+            avg_rating=Avg("reviews__rating"), review_count=Count("reviews")
+        )
+        .prefetch_related("genres")
+        .order_by("-created_at")
+    )
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["genres", "release_date"]
     search_fields = ["title"]

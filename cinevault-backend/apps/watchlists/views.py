@@ -20,7 +20,7 @@ class WatchListViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = WatchList.objects.select_related("user").prefetch_related("entries__movie")
+        qs = WatchList.objects.select_related("user").prefetch_related("entries__movie__genres")
         if user.is_authenticated:
             return qs.filter(Q(is_public=True) | Q(user=user))
         return qs.filter(is_public=True)

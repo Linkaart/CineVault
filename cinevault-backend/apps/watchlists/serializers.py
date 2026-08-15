@@ -20,8 +20,12 @@ class ListEntrySerializer(serializers.ModelSerializer):
 
 class WatchListSerializer(serializers.ModelSerializer):
     entries = ListEntrySerializer(many=True, read_only=True)
-    movie_count = serializers.IntegerField(source="entries.count", read_only=True)
+    movie_count = serializers.SerializerMethodField()
     owner_username = serializers.CharField(source="user.username", read_only=True)
+
+    def get_movie_count(self, obj):
+        # Utilise le cache de prefetch_related plutôt qu'un COUNT(*) par liste.
+        return len(obj.entries.all())
 
     class Meta:
         model = WatchList
