@@ -2,7 +2,9 @@
 
 Plateforme de critiques et recommandations de films. Les utilisateurs explorent un catalogue synchronisé depuis TMDB, notent et commentent des films, créent des listes personnalisées, suivent d'autres utilisateurs et reçoivent des recommandations personnalisées calculées de façon asynchrone.
 
-![CI](https://github.com/<ton-username>/cinevault/actions/workflows/ci.yml/badge.svg)
+**🔗 Démo : [cinevault-two-pi.vercel.app](https://cinevault-two-pi.vercel.app)**
+
+[![CI](https://github.com/Linkaart/CineVault/actions/workflows/ci.yml/badge.svg)](https://github.com/Linkaart/CineVault/actions/workflows/ci.yml)
 ![Django](https://img.shields.io/badge/Django-5.0-092E20?logo=django)
 ![DRF](https://img.shields.io/badge/DRF-3.15-red)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
@@ -89,8 +91,8 @@ Plateforme de critiques et recommandations de films. Les utilisateurs explorent 
 
 ```bash
 # 1. Cloner le repo
-git clone https://github.com/<ton-username>/cinevault.git
-cd cinevault
+git clone https://github.com/Linkaart/CineVault.git
+cd CineVault
 
 # 2. Configurer les variables d'environnement
 cp .env.example .env
